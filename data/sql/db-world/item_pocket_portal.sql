@@ -1,10 +1,10 @@
 -- --------------------------------------------------------------------------------------
 -- Pocket Portal (Tofu Worldview fork)
 --
--- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "Jeffery", gossip menus 900000 to 900002 and 900010 to 900026, and the NPC's SmartAI teleport rows.
+-- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "Tofu Portal", gossip menus 900000 to 900002 and 900010 to 900026, and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal"; IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
@@ -28,10 +28,10 @@ DELETE FROM `npc_vendor` WHERE `item` = @ITEMENTRY;
 -- --------------------------------------------------------------------------------------
 DELETE FROM `item_template` WHERE `entry` = @ITEMENTRY;
 INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `maxcount`, `stackable`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `bonding`, `description`, `Material`, `ScriptName`, `VerifiedBuild`) VALUES
-(@ITEMENTRY, 0, 0, @NAME, 28862, @QUALITY, @FLAGS, 1, 0, 0, 0, -1, -1, 1, 0, 1, 1, @SPELL, 0, 0, -1, 0, -1, 1, 'Summons Jeffery, who can take you almost anywhere.', -1, @SCRIPTNAME, 12340);
+(@ITEMENTRY, 0, 0, @NAME, 28862, @QUALITY, @FLAGS, 1, 0, 0, 0, -1, -1, 1, 0, 1, 1, @SPELL, 0, 0, -1, 0, -1, 1, 'Summons the Tofu Portal, which can take you almost anywhere.', -1, @SCRIPTNAME, 12340);
 
 SET @ENTRY       := 900000;
-SET @NAME_NPC    := 'Jeffery';
+SET @NAME_NPC    := 'Tofu Portal';
 SET @GOSSIP_MENU := 900000;
 SET @ACTION_MENU := 900010; -- Submenus 900010 to 900026
 
