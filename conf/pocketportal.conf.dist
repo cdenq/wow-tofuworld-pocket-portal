@@ -2,16 +2,25 @@
 
 ################################################################################################################
 #
-#    PremiumAccount
-#        Description: Enable Pocket Portal for players
-#        Default:     1  - (Enabled)
-#                     0  - (Disabled)
+#    PocketPortal.Enable
+#        Description: Enable the Pocket Portal for players.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+
 PocketPortal.Enable = 1
 
 #
-#   Portal.NpcDuration
-#       Description: Time (in seconds) before despawn of summoned NPC
-#       Default:    30 - (Seconds)
-Portal.NpcDuration = 30
+#    PocketPortal.Cooldown
+#        Description: Seconds a player must wait between two uses of the Pocket Portal. Each player has their own cooldown. A new use despawns that player's previous teleporter.
+#        Default:     3 - (Seconds)
+
+PocketPortal.Cooldown = 3
+
+#
+#    Portal.NpcDuration
+#        Description: Seconds before the summoned teleporter NPC despawns.
+#        Default:     15 - (Seconds)
+
+Portal.NpcDuration = 15
 
 ##################################################################################################################

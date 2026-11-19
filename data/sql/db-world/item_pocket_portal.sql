@@ -1,72 +1,56 @@
 -- --------------------------------------------------------------------------------------
--- Pocket Portal
+-- Pocket Portal (Tofu Worldview fork)
+--
+-- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "Jeffery", gossip menus 900000 to 900002 and 900010 to 900026, and the NPC's SmartAI teleport rows.
+-- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
+-- Restart: worldserver restart; players delete the client Cache folder.
+-- Tofu changes from upstream: IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed.
+-- Re-runnable: every insert is preceded by a delete of the same keys.
+-- Check:
+--   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
+--   SELECT COUNT(*) FROM acore_world.npc_vendor WHERE item = 900000; -- expected 0
+--   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 157
+--   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 138
 -- --------------------------------------------------------------------------------------
 SET
-@ITEMENTRY      := 701002,
+@ITEMENTRY      := 900000,
 @NAME           := "Pocket Portal",
 @QUALITY        := 7,
-@FLAGS          := 134217728, -- BOA
-@FLAGSEXTRA     := 0,
-@SOURCETYPE     := 0,
-@COOLDOWN       := 0,
-@SPELL          := 51371,
-@BUYPRICE       := 5000000,
+@FLAGS          := 134217728, -- ITEM_FLAG_IS_BOUND_TO_ACCOUNT
+@SPELL          := 51371,     -- on-use spell; never cast (the script handles every use), but the client needs an on-use spell to let the item be used
 @SCRIPTNAME     := 'pocket_portal';
 
--- Add the item to Magical Goods Vendor in Dalaran
--- https://www.wowhead.com/wotlk/npc=28715/endora-moorehead
-DELETE FROM `npc_vendor` WHERE `entry` = 28715 AND `item` = @ITEMENTRY;
-INSERT INTO `npc_vendor` (`entry`, `slot`, `item`, `maxcount`, `incrtime`, `ExtendedCost`, `VerifiedBuild`)
-VALUES (28715, 0, @ITEMENTRY, 0, 0, 0, 0);
+-- Not sold by any vendor
+DELETE FROM `npc_vendor` WHERE `item` = @ITEMENTRY;
 
 -- --------------------------------------------------------------------------------------
--- Teleporter Item
+-- Teleporter Item (columns not listed keep their table defaults)
 -- --------------------------------------------------------------------------------------
-DELETE FROM `item_template` WHERE (`entry`= @ITEMENTRY);
-INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `FlagsExtra`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `ScalingStatDistribution`, `ScalingStatValue`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`, `socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `Duration`, `ItemLimitCategory`, `HolidayId`, `ScriptName`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `VerifiedBuild`)
-VALUES (@ITEMENTRY, 0, 0, @NAME, 28862, @QUALITY, @FLAGS, @FLAGSEXTRA, 1, @BUYPRICE, 10000, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, @SPELL, 0, 0, 0, @COOLDOWN, 1193, @COOLDOWN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, '', 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, @SCRIPTNAME, 0, 0, 0, 0, 12340);
+DELETE FROM `item_template` WHERE `entry` = @ITEMENTRY;
+INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `maxcount`, `stackable`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `bonding`, `description`, `Material`, `ScriptName`, `VerifiedBuild`) VALUES
+(@ITEMENTRY, 0, 0, @NAME, 28862, @QUALITY, @FLAGS, 1, 0, 0, 0, -1, -1, 1, 0, 1, 1, @SPELL, 0, 0, -1, 0, -1, 1, 'Summons Jeffery, who can take you almost anywhere.', -1, @SCRIPTNAME, 12340);
 
-SET @ENTRY       := 128;
+SET @ENTRY       := 900000;
 SET @NAME_NPC    := 'Jeffery';
-SET @GOSSIP_MENU := 92000;
-SET @ACTION_MENU := 1200000; -- Submenus
-SET @TEXT_ID     := 90000;
-SET @SSID        := 140;
-SET @LINK        := 0;
-SET @SCALE       := 0.8;
-SET @EVENTTYPE   := 25;     -- 25 = SMART_EVENT_RESET (After spawn, respawn, etc.)
-SET @ACTIONTYPE  := 41;     -- 41 = SMART_ACTION_FORCE_DESPAWN
-SET @APARM1      := 30000;  -- Milliseconds until despawn occurs
-SET @TTYPE       := 19;     -- 19 - SMART_TARGET_CLOSEST_CREATURE
-SET @TPARM1      := 128;    -- SMART_TARGET CREATURE ID
-SET @NOTE        := "Personal Teleporter";
+SET @GOSSIP_MENU := 900000;
+SET @ACTION_MENU := 900010; -- Submenus 900010 to 900026
 
 -- --------------------------------------------------------------------------------------
 -- Teleporter NPC
---
 -- `modelid` = 30076 (Jeeves), 27320 (Goblin Mechanic), 21572 (Elven Portal Master)
---
 -- --------------------------------------------------------------------------------------
-DELETE FROM `creature_template` WHERE (`entry`=@ENTRY);
-INSERT INTO `creature_template` (`entry`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `Healthmodifier`, `Manamodifier`, `Armormodifier`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `rank`, `damagemodifier`, `unit_class`, `unit_flags`, `type`, `type_flags`, `RegenHealth`, `flags_extra`, `AiName`) VALUES(@ENTRY, @NAME_NPC, "", 'Directions', @GOSSIP_MENU, 60, 60, 1.56, 1.56, 1.56, 35, 3, 1, 1.14286, 1, 1, 1, 2, 7, 138936390, 1, 2, 'SmartAI');
+DELETE FROM `creature_template` WHERE `entry` = @ENTRY;
+INSERT INTO `creature_template` (`entry`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `rank`, `DamageModifier`, `unit_class`, `unit_flags`, `type`, `type_flags`, `RegenHealth`, `flags_extra`, `AIName`) VALUES
+(@ENTRY, @NAME_NPC, 'Personal Teleporter', 'Directions', @GOSSIP_MENU, 60, 60, 1.56, 1.56, 1.56, 35, 1, 1, 1.14286, 1, 1, 1, 2, 7, 138936390, 1, 2, 'SmartAI');
 
-DELETE FROM `smart_scripts` WHERE (`entryorguid`=@ENTRY) AND (`source_type`=@SOURCETYPE) AND (`id` = @SSID);
-INSERT INTO `smart_scripts` (`entryorguid`,`source_type`,`id`,`link`,`event_type`,`event_phase_mask`,`event_chance`,`event_flags`,`event_param1`,`event_param2`,`event_param3`,`event_param4`,`action_type`,`action_param1`,`action_param2`,`action_param3`,`action_param4`,`action_param5`,`action_param6`,`target_type`,`target_param1`,`target_param2`,`target_param3`,`target_x`,`target_y`,`target_z`,`target_o`,`comment`) VALUES
-(@ENTRY,@SOURCETYPE,@SSID,@LINK,@EVENTTYPE,0,100,0,0,0,0,0,@ACTIONTYPE,@APARM1,0,0,0,0,0,@TTYPE,@TPARM1,0,0,0.0,0.0,0.0,0.0,@NOTE);
--- NPC MODEL
-DELETE FROM `creature_template_model` WHERE `CreatureID` = @Entry;
+DELETE FROM `creature_template_model` WHERE `CreatureID` = @ENTRY;
 INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`) VALUES
 (@ENTRY, 0, 30076, 1, 1, 0);
 
--- creature_template_movement
-DELETE FROM `creature_template_movement` WHERE `CreatureId` IN (@Entry);
+DELETE FROM `creature_template_movement` WHERE `CreatureId` = @ENTRY;
 INSERT INTO `creature_template_movement` (`CreatureId`, `Ground`, `Swim`, `Flight`, `Rooted`, `Chase`, `Random`, `InteractionPauseTimer`) VALUES
 (@ENTRY, 1, 1, 0, 0, 0, 0, NULL);
 
--- --------------------------------------------------------------------------------------
--- Update Creature SmartAI
--- --------------------------------------------------------------------------------------
-UPDATE `creature_template` SET `AIName`="SmartAI" WHERE `entry`=@ENTRY LIMIT 1;
 -- --------------------------------------------------------------------------------------
 -- Gossip_Menus
 -- Insert into the database the gossip menus necessary for the NPC to speak.
@@ -99,7 +83,7 @@ INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionTex
 (@GOSSIP_MENU + 2, 2, 0, 'Horde Townships', 1, 1, @ACTION_MENU + 10),
 (@GOSSIP_MENU + 2, 3, 0, 'Wilderness 1', 1, 1, @ACTION_MENU + 11),
 (@GOSSIP_MENU + 2, 4, 0, 'Wilderness 2', 1, 1, @ACTION_MENU + 12),
-(@GOSSIP_MENU + 2, 5, 0, 'Wilderness 2', 1, 1, @ACTION_MENU + 13),
+(@GOSSIP_MENU + 2, 5, 0, 'Wilderness 3', 1, 1, @ACTION_MENU + 13),
 (@GOSSIP_MENU + 2, 6, 0, 'Outland Wilderness', 1, 1, @ACTION_MENU + 14),
 (@GOSSIP_MENU + 2, 7, 0, 'Northrend Wilderness', 1, 1, @ACTION_MENU + 15),
 (@GOSSIP_MENU + 2, 8, 0, 'Tamed Wilderness', 1, 1, @ACTION_MENU + 16);
@@ -300,7 +284,7 @@ INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionTex
 -- Don't try to change these destinations in keira, but edit the coordinates in this script itself for custom changes.
 -- Accepting PR to anyone who wants to move the smartscript IDs so they're in order from 1-x.
 -- --------------------------------------------------------------------------------------
-DELETE FROM `smart_scripts` WHERE (`entryorguid`=@ENTRY) AND (`event_type`=62);
+DELETE FROM `smart_scripts` WHERE `entryorguid` = @ENTRY AND `source_type` = 0;
 INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_type`, `event_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `action_type`, `action_param1`, `action_param2`, `action_param3`, `action_param4`, `action_param5`, `action_param6`, `target_type`, `target_param1`, `target_param2`, `target_param3`, `target_x`, `target_y`, `target_z`, `target_o`, `comment`) VALUES
 (@ENTRY, 0, 1, 0, 62, 0, 100, 0, @ACTION_MENU + 0, 1, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -8842.09, 626.358, 94.0867, 3.61363, "Stormwind City"),
 (@ENTRY, 0, 7, 0, 62, 0, 100, 0, @ACTION_MENU + 0, 2, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 9869.91, 2493.58, 1315.88, 2.78897, "Darnassus"),
