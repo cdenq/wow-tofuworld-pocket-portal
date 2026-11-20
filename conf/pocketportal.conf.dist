@@ -21,6 +21,6 @@ PocketPortal.Cooldown = 3
 #        Description: Seconds before the summoned teleporter NPC despawns.
 #        Default:     15 - (Seconds)
 
-Portal.NpcDuration = 15
+Portal.NpcDuration = 30
 
 ##################################################################################################################

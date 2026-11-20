@@ -13,7 +13,7 @@ Now with more apples.
 
 Changes from upstream:
 - Per-player cooldown (`PocketPortal.Cooldown`, default 3 seconds), stored on each player, instead of one cooldown shared by the whole server.
-- Despawn time (`Portal.NpcDuration`) is now separate from the cooldown; default 15 seconds. A new use despawns the player's previous teleporter.
+- Despawn time (`Portal.NpcDuration`) is now separate from the cooldown; 30 seconds in the shipped conf (the code falls back to 15 if the key is missing). A new use despawns the player's previous teleporter.
 - The script handles every use (blocked, on cooldown, disabled, or success), so the item's own on-use spell never casts.
 - IDs moved into the Tofu custom range: item 900000, creature 900000, gossip menus 900000 to 900002 and 900010 to 900026.
 - The item is Bind-on-Account, cannot be sold (SellPrice 0), and is not sold by any vendor; players get it from the starting kit.

@@ -1,16 +1,16 @@
 -- --------------------------------------------------------------------------------------
 -- Pocket Portal (Tofu Worldview fork)
 --
--- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "Tofu Portal", gossip menus 900000 to 900002 and 900010 to 900026, and the NPC's SmartAI teleport rows.
+-- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "Tofu Portal", gossip menus 900000 to 900007 and 900010 to 900026, and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal"; IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal"; IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); NPC despawn 30 seconds.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
 --   SELECT COUNT(*) FROM acore_world.npc_vendor WHERE item = 900000; -- expected 0
---   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 157
---   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 138
+--   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 199
+--   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 175
 -- --------------------------------------------------------------------------------------
 SET
 @ITEMENTRY      := 900000,
@@ -56,8 +56,8 @@ INSERT INTO `creature_template_movement` (`CreatureId`, `Ground`, `Swim`, `Fligh
 -- Insert into the database the gossip menus necessary for the NPC to speak.
 -- --------------------------------------------------------------------------------------
 
-DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 5);
-DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 5);
+DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 7);
+DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 7);
 DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @ACTION_MENU AND (@ACTION_MENU + 16);
 
 -- MAIN MENU
@@ -69,7 +69,12 @@ INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionTex
 (@GOSSIP_MENU, 5, 0, 'WotLK Dungeons', 1, 1, @ACTION_MENU + 6),
 (@GOSSIP_MENU, 6, 0, 'Raids 1', 1, 1, @ACTION_MENU + 7),
 (@GOSSIP_MENU, 7, 0, 'Raids 2', 1, 1, @ACTION_MENU + 8),
-(@GOSSIP_MENU, 8, 0, 'Miscellaneous', 1, 1, @GOSSIP_MENU + 2);
+(@GOSSIP_MENU, 8, 0, 'Miscellaneous', 1, 1, @GOSSIP_MENU + 2),
+(@GOSSIP_MENU, 9, 0, 'Easter Egg Zones', 1, 1, @GOSSIP_MENU + 3);
+
+-- Guild Hub (Tofu addition): direct teleport to the upper floor of the GM Island building, SmartAI row 236
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU, 10, 0, 'Guild Hub', 1, 1);
 
 -- Cities Submenu
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
@@ -278,6 +283,62 @@ INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionTex
 (@ACTION_MENU + 16, 4, 0, "Dead King's Crypt", 1, 1),
 (@ACTION_MENU + 16, 5, 0, "Honor's Stand", 1, 1),
 (@ACTION_MENU + 16, 6, 0, 'Shatterspear Vale', 1, 1);
+
+-- Easter Egg Zones (Tofu addition, from the location list of azerothcore/mod-guild-zone-system adb3ffa; menus 900003 to 900007; GM Island left out)
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
+(@GOSSIP_MENU + 3, 1, 0, 'Eastern Kingdoms 1', 1, 1, @GOSSIP_MENU + 4),
+(@GOSSIP_MENU + 3, 2, 0, 'Eastern Kingdoms 2', 1, 1, @GOSSIP_MENU + 5),
+(@GOSSIP_MENU + 3, 3, 0, 'Kalimdor', 1, 1, @GOSSIP_MENU + 6),
+(@GOSSIP_MENU + 3, 4, 0, 'Outland', 1, 1, @GOSSIP_MENU + 7);
+
+-- Easter Egg Zones: Eastern Kingdoms 1
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU + 4, 1, 0, 'Northshire Abbey Fishing Spot', 1, 1),
+(@GOSSIP_MENU + 4, 2, 0, 'Stormwind Empty Jail', 1, 1),
+(@GOSSIP_MENU + 4, 3, 0, 'Stormwind Cut-Throat Alley', 1, 1),
+(@GOSSIP_MENU + 4, 4, 0, 'Villains\' Camp (Elwynn Forest)', 1, 1),
+(@GOSSIP_MENU + 4, 5, 0, 'Karazhan Smiley', 1, 1),
+(@GOSSIP_MENU + 4, 6, 0, 'Well of the Forgotten (Karazhan Crypt)', 1, 1),
+(@GOSSIP_MENU + 4, 7, 0, 'Outside Zul\'Gurub', 1, 1),
+(@GOSSIP_MENU + 4, 8, 0, 'Stranglethorn Secret Cave', 1, 1),
+(@GOSSIP_MENU + 4, 9, 0, 'Ortell\'s Hideout', 1, 1),
+(@GOSSIP_MENU + 4, 10, 0, 'Crashed Gnome Airplane', 1, 1);
+
+-- Easter Egg Zones: Eastern Kingdoms 2
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU + 5, 1, 0, 'Old Ironforge', 1, 1),
+(@GOSSIP_MENU + 5, 2, 0, 'Ironforge Airport', 1, 1),
+(@GOSSIP_MENU + 5, 3, 0, 'Forgotten Gnome Camp', 1, 1),
+(@GOSSIP_MENU + 5, 4, 0, 'Dwarven Village (Wetlands)', 1, 1),
+(@GOSSIP_MENU + 5, 5, 0, 'Wetlands Mountain Camp', 1, 1),
+(@GOSSIP_MENU + 5, 6, 0, 'Harbor House', 1, 1),
+(@GOSSIP_MENU + 5, 7, 0, 'Dwarven Village (Arathi Coast)', 1, 1),
+(@GOSSIP_MENU + 5, 8, 0, 'Outside Shadowfang Keep', 1, 1),
+(@GOSSIP_MENU + 5, 9, 0, 'Undercity Top Tier', 1, 1),
+(@GOSSIP_MENU + 5, 10, 0, 'Outside Stratholme', 1, 1),
+(@GOSSIP_MENU + 5, 11, 0, 'Quel\'Thalas Tower', 1, 1);
+
+-- Easter Egg Zones: Kalimdor
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU + 6, 1, 0, 'Hyjal World Tree', 1, 1),
+(@GOSSIP_MENU + 6, 2, 0, 'Furbolg Camp (Teldrassil)', 1, 1),
+(@GOSSIP_MENU + 6, 3, 0, 'Troll Village (Darkshore)', 1, 1),
+(@GOSSIP_MENU + 6, 4, 0, 'Stonetalon Logging Camp', 1, 1),
+(@GOSSIP_MENU + 6, 5, 0, 'Stonetalon Ruins', 1, 1),
+(@GOSSIP_MENU + 6, 6, 0, 'Tauren Camp (Red Rock, Mulgore)', 1, 1),
+(@GOSSIP_MENU + 6, 7, 0, 'Ring of Valor (Orgrimmar)', 1, 1),
+(@GOSSIP_MENU + 6, 8, 0, 'Goblin Village (Tanaris Coast)', 1, 1),
+(@GOSSIP_MENU + 6, 9, 0, 'Tauren Village (Silithus Coast)', 1, 1),
+(@GOSSIP_MENU + 6, 10, 0, 'Azshara Crater: Alliance Side', 1, 1),
+(@GOSSIP_MENU + 6, 11, 0, 'Azshara Crater: Horde Side', 1, 1);
+
+-- Easter Egg Zones: Outland
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU + 7, 1, 0, 'Nagrand: Newton\'s Remains', 1, 1),
+(@GOSSIP_MENU + 7, 2, 0, 'Nagrand: Tomb', 1, 1),
+(@GOSSIP_MENU + 7, 3, 0, 'Nagrand: Challe\'s Home for Little Tykes', 1, 1),
+(@GOSSIP_MENU + 7, 4, 0, 'Netherstorm: Nova\'s Shrine', 1, 1);
+
 -- --------------------------------------------------------------------------------------
 -- Smart Scripts
 -- These have been moved a lot to reflect changes in the menu. But the actual smartID's ID I did not bother to change. You'll notice the 3rd value in each row is way out of order.
@@ -442,4 +503,44 @@ INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_
 (@ENTRY, 0, 134, 0, 62, 0, 100, 0, @ACTION_MENU +16, 3, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -396.86, -2183.42, 158.1, 0.162564, "Koiter's Shrine"),
 (@ENTRY, 0, 135, 0, 62, 0, 100, 0, @ACTION_MENU +16, 4, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -6583.62, -3486.57, 318.362, 0.49825, "Dead King's Crypt"),
 (@ENTRY, 0, 138, 0, 62, 0, 100, 0, @ACTION_MENU +16, 5, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -745.952, -989.286, 194.098, 2.01729, "Honor's Stand"),
-(@ENTRY, 0, 139, 0, 62, 0, 100, 0, @ACTION_MENU +16, 6, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 7443.72, -1690.19, 194.643, 5.49535, "Shatterspear Vale");
+(@ENTRY, 0, 139, 0, 62, 0, 100, 0, @ACTION_MENU +16, 6, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 7443.72, -1690.19, 194.643, 5.49535, "Shatterspear Vale"),
+-- --------------------------------------------------------------------------------------
+-- Easter Egg Zones (Tofu addition): event_param1 = submenu, event_param2 = OptionID; action_param1 = map
+-- --------------------------------------------------------------------------------------
+(@ENTRY, 0, 200, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 1, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -8323, -343, 146, 0, "Easter Egg: Northshire Abbey Fishing Spot"),
+(@ENTRY, 0, 201, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 2, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -8640, 580, 96, 1.50404, "Easter Egg: Stormwind Empty Jail"),
+(@ENTRY, 0, 202, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 3, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -8521.3, 599.5, 101.399338, 3.89558, "Easter Egg: Stormwind Cut-Throat Alley"),
+(@ENTRY, 0, 203, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 4, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -9296, 670, 132, 3.46282, "Easter Egg: Villains' Camp (Elwynn Forest)"),
+(@ENTRY, 0, 204, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 5, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -11073, -1956, 39, 4.86555, "Easter Egg: Karazhan Smiley"),
+(@ENTRY, 0, 205, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 6, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -11084, -1801, 53, 0, "Easter Egg: Well of the Forgotten (Karazhan Crypt)"),
+(@ENTRY, 0, 206, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 7, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -11790, -1640, 54.7, 1.63755, "Easter Egg: Outside Zul'Gurub"),
+(@ENTRY, 0, 207, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 8, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -12865, -1396, 115, 3.60498, "Easter Egg: Stranglethorn Secret Cave"),
+(@ENTRY, 0, 208, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 9, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -5362, -2540, 485, 0, "Easter Egg: Ortell's Hideout"),
+(@ENTRY, 0, 209, 0, 62, 0, 100, 0, @GOSSIP_MENU + 4, 10, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -6161, -790, 423, 3.49502, "Easter Egg: Crashed Gnome Airplane"),
+(@ENTRY, 0, 210, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 1, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -4844, -1066, 502, 4.69275, "Easter Egg: Old Ironforge"),
+(@ENTRY, 0, 211, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 2, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -4863, -1658, 503.5, 3.48324, "Easter Egg: Ironforge Airport"),
+(@ENTRY, 0, 212, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 3, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -5933, 452, 509, 3.87987, "Easter Egg: Forgotten Gnome Camp"),
+(@ENTRY, 0, 213, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 4, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -4151, -1400, 198, 0.239546, "Easter Egg: Dwarven Village (Wetlands)"),
+(@ENTRY, 0, 214, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 5, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -3855, -3479, 579, 0, "Easter Egg: Wetlands Mountain Camp"),
+(@ENTRY, 0, 215, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 6, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -6374, 1262, 7, 2.23838, "Easter Egg: Harbor House"),
+(@ENTRY, 0, 216, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 7, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -1840, -4233, 2.14, 0, "Easter Egg: Dwarven Village (Arathi Coast)"),
+(@ENTRY, 0, 217, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 8, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -206, 1666, 80, 2.72533, "Easter Egg: Outside Shadowfang Keep"),
+(@ENTRY, 0, 218, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 9, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 1683.235474, 286.458801, -45.451775, 3.6089, "Easter Egg: Undercity Top Tier"),
+(@ENTRY, 0, 219, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 10, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 3414, -3380, 142.2, 0, "Easter Egg: Outside Stratholme"),
+(@ENTRY, 0, 220, 0, 62, 0, 100, 0, @GOSSIP_MENU + 5, 11, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 4303, -2760, 16.8, 3.6364, "Easter Egg: Quel'Thalas Tower"),
+(@ENTRY, 0, 221, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 1, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 4654, -3772, 944, 2.93346, "Easter Egg: Hyjal World Tree"),
+(@ENTRY, 0, 222, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 2, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 9725.27, -21.43, 20.03, 0, "Easter Egg: Furbolg Camp (Teldrassil)"),
+(@ENTRY, 0, 223, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 3, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 7368, -1560, 163, 2.40331, "Easter Egg: Troll Village (Darkshore)"),
+(@ENTRY, 0, 224, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 4, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 1951.512085, 1530.475586, 247.288147, 0, "Easter Egg: Stonetalon Logging Camp"),
+(@ENTRY, 0, 225, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 5, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 2813.660645, 2248.552979, 215.524643, 0, "Easter Egg: Stonetalon Ruins"),
+(@ENTRY, 0, 226, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 6, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -723, -1076, 179, 3.41648, "Easter Egg: Tauren Camp (Red Rock, Mulgore)"),
+(@ENTRY, 0, 227, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 7, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 2176, -4766, 55, 0, "Easter Egg: Ring of Valor (Orgrimmar)"),
+(@ENTRY, 0, 228, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 8, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -11805, -4754, 6, 2.12058, "Easter Egg: Goblin Village (Tanaris Coast)"),
+(@ENTRY, 0, 229, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 9, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -10711, 2483, 8, 3.45575, "Easter Egg: Tauren Village (Silithus Coast)"),
+(@ENTRY, 0, 230, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 10, 0, 0, 62, 37, 0, 0, 0, 0, 0, 7, 0, 0, 0, 1146, -165, 313, 0, "Easter Egg: Azshara Crater: Alliance Side"),
+(@ENTRY, 0, 231, 0, 62, 0, 100, 0, @GOSSIP_MENU + 6, 11, 0, 0, 62, 37, 0, 0, 0, 0, 0, 7, 0, 0, 0, -123, 858, 298, 5.6313, "Easter Egg: Azshara Crater: Horde Side"),
+(@ENTRY, 0, 232, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 1, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -920.231323, 7096.489258, 170.35289, 0.48302, "Easter Egg: Nagrand: Newton's Remains"),
+(@ENTRY, 0, 233, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 2, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -2140.501953, 9142.6875, 137.041855, 0.20813, "Easter Egg: Nagrand: Tomb"),
+(@ENTRY, 0, 234, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 3, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -483.401794, 7461.944824, 186.120987, 3.53037, "Easter Egg: Nagrand: Challe's Home for Little Tykes"),
+(@ENTRY, 0, 235, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 4, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, 2387.753906, 3191.757324, 152.669388, 5.20327, "Easter Egg: Netherstorm: Nova's Shrine"),
+(@ENTRY, 0, 236, 0, 62, 0, 100, 0, @GOSSIP_MENU, 10, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 16228.407, 16306.691, 29.263594, 6.263572, "Guild Hub");
