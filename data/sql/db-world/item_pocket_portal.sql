@@ -1,18 +1,20 @@
 -- --------------------------------------------------------------------------------------
 -- Pocket Portal (Tofu Worldview fork)
 --
--- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900007 and 900010 to 900026 (every page shows greeting npc_text 900013), and the NPC's SmartAI teleport rows.
+-- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900008 and 900010 to 900026 (every page shows greeting npc_text 900013), and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); main menu reordered 2026-11-22 to Guild Hub (option 1), Cities, Miscellaneous, then the rest; NPC despawn 30 seconds.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); main menu reordered 2026-11-22 to Guild Hub (option 1), Cities, Miscellaneous, then the rest; 2026-11-22: Back as the last option of every page except the main menu, option icons (4 opens a page, 2 teleport, 9 dungeon or raid teleport, 8 Guild Hub, 7 Back), and a Starter Zones page (menu 900008 under Miscellaneous, smart_scripts ids 237 to 244); NPC despawn 30 seconds.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
 --   SELECT COUNT(*) FROM acore_world.npc_vendor WHERE item = 900000; -- expected 0
---   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 199
---   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 175
+--   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 233
+--   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 183
 --   SELECT entry, name, subname FROM acore_world.creature_template WHERE entry = 900000; -- expected 900000, A.R.T.H.A.S, Teleporter
---   SELECT COUNT(*), MIN(TextID), MAX(TextID) FROM acore_world.gossip_menu WHERE MenuID BETWEEN 900000 AND 900026; -- expected 25, 900013, 900013
+--   SELECT COUNT(*), MIN(TextID), MAX(TextID) FROM acore_world.gossip_menu WHERE MenuID BETWEEN 900000 AND 900026; -- expected 26, 900013, 900013
+--   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026 AND OptionText = 'Back'; -- expected 25
+--   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026 AND OptionIcon = 0; -- expected 0
 --   SELECT ID, text0_0 FROM acore_world.npc_text WHERE ID = 900013; -- expected 1 row with the ONLINE line
 -- --------------------------------------------------------------------------------------
 SET
@@ -60,299 +62,339 @@ INSERT INTO `creature_template_movement` (`CreatureId`, `Ground`, `Swim`, `Fligh
 -- Insert into the database the gossip menus necessary for the NPC to speak.
 -- --------------------------------------------------------------------------------------
 
-DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 7);
+DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 8);
 DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @ACTION_MENU AND (@ACTION_MENU + 16);
 
--- Greeting on every page: main menu, its submenus 900001 to 900007, and the destination menus 900010 to 900026
+-- Greeting on every page: main menu, its submenus 900001 to 900008, and the destination menus 900010 to 900026
 DELETE FROM `npc_text` WHERE `ID` = @GREET_TEXT;
 INSERT INTO `npc_text` (`ID`, `text0_0`, `text0_1`, `BroadcastTextID0`, `lang0`, `Probability0`) VALUES
 (@GREET_TEXT, 'Arcane Robotic Teleportation & Hyperspace Access System: ONLINE.', 'Arcane Robotic Teleportation & Hyperspace Access System: ONLINE.', 0, 0, 1);
 INSERT INTO `gossip_menu` (`MenuID`, `TextID`) VALUES
-(@GOSSIP_MENU + 0, @GREET_TEXT), (@GOSSIP_MENU + 1, @GREET_TEXT), (@GOSSIP_MENU + 2, @GREET_TEXT), (@GOSSIP_MENU + 3, @GREET_TEXT), (@GOSSIP_MENU + 4, @GREET_TEXT), (@GOSSIP_MENU + 5, @GREET_TEXT), (@GOSSIP_MENU + 6, @GREET_TEXT), (@GOSSIP_MENU + 7, @GREET_TEXT),
+(@GOSSIP_MENU + 0, @GREET_TEXT), (@GOSSIP_MENU + 1, @GREET_TEXT), (@GOSSIP_MENU + 2, @GREET_TEXT), (@GOSSIP_MENU + 3, @GREET_TEXT), (@GOSSIP_MENU + 4, @GREET_TEXT), (@GOSSIP_MENU + 5, @GREET_TEXT), (@GOSSIP_MENU + 6, @GREET_TEXT), (@GOSSIP_MENU + 7, @GREET_TEXT), (@GOSSIP_MENU + 8, @GREET_TEXT),
 (@ACTION_MENU + 0, @GREET_TEXT), (@ACTION_MENU + 1, @GREET_TEXT), (@ACTION_MENU + 2, @GREET_TEXT), (@ACTION_MENU + 3, @GREET_TEXT), (@ACTION_MENU + 4, @GREET_TEXT), (@ACTION_MENU + 5, @GREET_TEXT), (@ACTION_MENU + 6, @GREET_TEXT), (@ACTION_MENU + 7, @GREET_TEXT), (@ACTION_MENU + 8, @GREET_TEXT),
 (@ACTION_MENU + 9, @GREET_TEXT), (@ACTION_MENU + 10, @GREET_TEXT), (@ACTION_MENU + 11, @GREET_TEXT), (@ACTION_MENU + 12, @GREET_TEXT), (@ACTION_MENU + 13, @GREET_TEXT), (@ACTION_MENU + 14, @GREET_TEXT), (@ACTION_MENU + 15, @GREET_TEXT), (@ACTION_MENU + 16, @GREET_TEXT);
-DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 7);
+DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 8);
 DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @ACTION_MENU AND (@ACTION_MENU + 16);
 
 -- MAIN MENU
 -- The client lists options by OptionID: Guild Hub, Cities, Miscellaneous first (Tofu order, 2026-11-22), then the rest in their earlier order.
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
-(@GOSSIP_MENU, 2, 0, 'Cities', 1, 1, @GOSSIP_MENU + 1),
-(@GOSSIP_MENU, 3, 0, 'Miscellaneous', 1, 1, @GOSSIP_MENU + 2),
-(@GOSSIP_MENU, 4, 0, 'Classic Dungeons 1', 1, 1, @ACTION_MENU + 3),
-(@GOSSIP_MENU, 5, 0, 'Classic Dungeons 2', 1, 1, @ACTION_MENU + 4),
-(@GOSSIP_MENU, 6, 0, 'TBC Dungeons', 1, 1, @ACTION_MENU + 5),
-(@GOSSIP_MENU, 7, 0, 'WotLK Dungeons', 1, 1, @ACTION_MENU + 6),
-(@GOSSIP_MENU, 8, 0, 'Raids 1', 1, 1, @ACTION_MENU + 7),
-(@GOSSIP_MENU, 9, 0, 'Raids 2', 1, 1, @ACTION_MENU + 8),
-(@GOSSIP_MENU, 10, 0, 'Easter Egg Zones', 1, 1, @GOSSIP_MENU + 3);
+(@GOSSIP_MENU, 2, 4, 'Cities', 1, 1, @GOSSIP_MENU + 1),
+(@GOSSIP_MENU, 3, 4, 'Miscellaneous', 1, 1, @GOSSIP_MENU + 2),
+(@GOSSIP_MENU, 4, 4, 'Classic Dungeons 1', 1, 1, @ACTION_MENU + 3),
+(@GOSSIP_MENU, 5, 4, 'Classic Dungeons 2', 1, 1, @ACTION_MENU + 4),
+(@GOSSIP_MENU, 6, 4, 'TBC Dungeons', 1, 1, @ACTION_MENU + 5),
+(@GOSSIP_MENU, 7, 4, 'WotLK Dungeons', 1, 1, @ACTION_MENU + 6),
+(@GOSSIP_MENU, 8, 4, 'Raids 1', 1, 1, @ACTION_MENU + 7),
+(@GOSSIP_MENU, 9, 4, 'Raids 2', 1, 1, @ACTION_MENU + 8),
+(@GOSSIP_MENU, 10, 4, 'Easter Egg Zones', 1, 1, @GOSSIP_MENU + 3);
 
 -- Guild Hub (Tofu addition): option 1, direct teleport to the upper floor of the GM Island building, SmartAI row 236
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@GOSSIP_MENU, 1, 0, 'Guild Hub', 1, 1);
+(@GOSSIP_MENU, 1, 8, 'Guild Hub', 1, 1);
 
 -- Cities Submenu
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
-(@GOSSIP_MENU + 1, 1, 0, 'Alliance Cities', 1, 1, @ACTION_MENU + 0),
-(@GOSSIP_MENU + 1, 2, 0, 'Horde Cities', 1, 1, @ACTION_MENU + 1),
-(@GOSSIP_MENU + 1, 3, 0, 'Neutral Cities', 1, 1, @ACTION_MENU + 2);
+(@GOSSIP_MENU + 1, 1, 4, 'Alliance Cities', 1, 1, @ACTION_MENU + 0),
+(@GOSSIP_MENU + 1, 2, 4, 'Horde Cities', 1, 1, @ACTION_MENU + 1),
+(@GOSSIP_MENU + 1, 3, 4, 'Neutral Cities', 1, 1, @ACTION_MENU + 2);
 
 -- Misc Submenu
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
-(@GOSSIP_MENU + 2, 1, 0, 'Alliance Townships', 1, 1, @ACTION_MENU + 9),
-(@GOSSIP_MENU + 2, 2, 0, 'Horde Townships', 1, 1, @ACTION_MENU + 10),
-(@GOSSIP_MENU + 2, 3, 0, 'Wilderness 1', 1, 1, @ACTION_MENU + 11),
-(@GOSSIP_MENU + 2, 4, 0, 'Wilderness 2', 1, 1, @ACTION_MENU + 12),
-(@GOSSIP_MENU + 2, 5, 0, 'Wilderness 3', 1, 1, @ACTION_MENU + 13),
-(@GOSSIP_MENU + 2, 6, 0, 'Outland Wilderness', 1, 1, @ACTION_MENU + 14),
-(@GOSSIP_MENU + 2, 7, 0, 'Northrend Wilderness', 1, 1, @ACTION_MENU + 15),
-(@GOSSIP_MENU + 2, 8, 0, 'Tamed Wilderness', 1, 1, @ACTION_MENU + 16);
+(@GOSSIP_MENU + 2, 1, 4, 'Alliance Townships', 1, 1, @ACTION_MENU + 9),
+(@GOSSIP_MENU + 2, 2, 4, 'Horde Townships', 1, 1, @ACTION_MENU + 10),
+(@GOSSIP_MENU + 2, 3, 4, 'Wilderness 1', 1, 1, @ACTION_MENU + 11),
+(@GOSSIP_MENU + 2, 4, 4, 'Wilderness 2', 1, 1, @ACTION_MENU + 12),
+(@GOSSIP_MENU + 2, 5, 4, 'Wilderness 3', 1, 1, @ACTION_MENU + 13),
+(@GOSSIP_MENU + 2, 6, 4, 'Outland Wilderness', 1, 1, @ACTION_MENU + 14),
+(@GOSSIP_MENU + 2, 7, 4, 'Northrend Wilderness', 1, 1, @ACTION_MENU + 15),
+(@GOSSIP_MENU + 2, 8, 4, 'Tamed Wilderness', 1, 1, @ACTION_MENU + 16),
+(@GOSSIP_MENU + 2, 9, 4, 'Starter Zones', 1, 1, @GOSSIP_MENU + 8);
 
 
 -- Alliance Cities Added + 0 for easier highlighting
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 0, 1, 0, 'Take me to: Stormwind City', 1, 1),
-(@ACTION_MENU + 0, 2, 0, 'Take me to: Darnassus', 1, 1),
-(@ACTION_MENU + 0, 3, 0, 'Take me to: Ironforge', 1, 1),
-(@ACTION_MENU + 0, 4, 0, 'Take me to: The Exodar', 1, 1);
+(@ACTION_MENU + 0, 1, 2, 'Take me to: Stormwind City', 1, 1),
+(@ACTION_MENU + 0, 2, 2, 'Take me to: Darnassus', 1, 1),
+(@ACTION_MENU + 0, 3, 2, 'Take me to: Ironforge', 1, 1),
+(@ACTION_MENU + 0, 4, 2, 'Take me to: The Exodar', 1, 1);
 
 -- Horde Cities
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 1, 1, 0, 'Orgrimmar', 1, 1),
-(@ACTION_MENU + 1, 2, 0, 'Thunderbluff', 1, 1),
-(@ACTION_MENU + 1, 3, 0, 'Undercity', 1, 1),
-(@ACTION_MENU + 1, 4, 0, 'Silvermoon', 1, 1);
+(@ACTION_MENU + 1, 1, 2, 'Orgrimmar', 1, 1),
+(@ACTION_MENU + 1, 2, 2, 'Thunderbluff', 1, 1),
+(@ACTION_MENU + 1, 3, 2, 'Undercity', 1, 1),
+(@ACTION_MENU + 1, 4, 2, 'Silvermoon', 1, 1);
 
 
 -- Neutral Zones
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 2, 1, 0, 'Shattrath', 1, 1),
-(@ACTION_MENU + 2, 2, 0, 'Dalaran', 1, 1),
-(@ACTION_MENU + 2, 3, 0, 'Booty Bay', 1, 1),
-(@ACTION_MENU + 2, 4, 0, 'Gadgetzan', 1, 1),
-(@ACTION_MENU + 2, 5, 0, 'Everlook', 1, 1),
-(@ACTION_MENU + 2, 6, 0, 'Area 52', 1, 1);
+(@ACTION_MENU + 2, 1, 2, 'Shattrath', 1, 1),
+(@ACTION_MENU + 2, 2, 2, 'Dalaran', 1, 1),
+(@ACTION_MENU + 2, 3, 2, 'Booty Bay', 1, 1),
+(@ACTION_MENU + 2, 4, 2, 'Gadgetzan', 1, 1),
+(@ACTION_MENU + 2, 5, 2, 'Everlook', 1, 1),
+(@ACTION_MENU + 2, 6, 2, 'Area 52', 1, 1);
 
 -- Classic Dungeons 1
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 3, 1, 0, 'Ragefire Chasm', 1, 1),
-(@ACTION_MENU + 3, 2, 0, 'The Deadmines', 1, 1),
-(@ACTION_MENU + 3, 3, 0, 'The Wailing Caverns', 1, 1),
-(@ACTION_MENU + 3, 4, 0, 'The Stockades', 1, 1),
-(@ACTION_MENU + 3, 5, 0, 'Shadowfang Keep', 1, 1),
-(@ACTION_MENU + 3, 6, 0, 'Blackfathom Deeps', 1, 1),
-(@ACTION_MENU + 3, 7, 0, 'Gnomergan', 1, 1),
-(@ACTION_MENU + 3, 8, 0, 'Scarlet Monastery', 1, 1),
-(@ACTION_MENU + 3, 9, 0, 'Razorfen Kraul', 1, 1),
-(@ACTION_MENU + 3, 10, 0, 'Razorfen Downs', 1, 1);
+(@ACTION_MENU + 3, 1, 9, 'Ragefire Chasm', 1, 1),
+(@ACTION_MENU + 3, 2, 9, 'The Deadmines', 1, 1),
+(@ACTION_MENU + 3, 3, 9, 'The Wailing Caverns', 1, 1),
+(@ACTION_MENU + 3, 4, 9, 'The Stockades', 1, 1),
+(@ACTION_MENU + 3, 5, 9, 'Shadowfang Keep', 1, 1),
+(@ACTION_MENU + 3, 6, 9, 'Blackfathom Deeps', 1, 1),
+(@ACTION_MENU + 3, 7, 9, 'Gnomergan', 1, 1),
+(@ACTION_MENU + 3, 8, 9, 'Scarlet Monastery', 1, 1),
+(@ACTION_MENU + 3, 9, 9, 'Razorfen Kraul', 1, 1),
+(@ACTION_MENU + 3, 10, 9, 'Razorfen Downs', 1, 1);
 
 -- Classic Dungeons 2
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 4, 1, 0, 'Uldaman', 1, 1),
-(@ACTION_MENU + 4, 2, 0, "Zul'Farrak", 1, 1),
-(@ACTION_MENU + 4, 3, 0, 'Maraudon', 1, 1),
-(@ACTION_MENU + 4, 4, 0, "The Temple of Atal'Hakkar", 1, 1),
-(@ACTION_MENU + 4, 5, 0, 'Blackrock Depths', 1, 1),
-(@ACTION_MENU + 4, 6, 0, 'Blackrock Spire', 1, 1),
-(@ACTION_MENU + 4, 7, 0, 'Dire Maul', 1, 1),
-(@ACTION_MENU + 4, 8, 0, 'Scholomance', 1, 1),
-(@ACTION_MENU + 4, 9, 0, 'Stratholme', 1, 1);
+(@ACTION_MENU + 4, 1, 9, 'Uldaman', 1, 1),
+(@ACTION_MENU + 4, 2, 9, "Zul'Farrak", 1, 1),
+(@ACTION_MENU + 4, 3, 9, 'Maraudon', 1, 1),
+(@ACTION_MENU + 4, 4, 9, "The Temple of Atal'Hakkar", 1, 1),
+(@ACTION_MENU + 4, 5, 9, 'Blackrock Depths', 1, 1),
+(@ACTION_MENU + 4, 6, 9, 'Blackrock Spire', 1, 1),
+(@ACTION_MENU + 4, 7, 9, 'Dire Maul', 1, 1),
+(@ACTION_MENU + 4, 8, 9, 'Scholomance', 1, 1),
+(@ACTION_MENU + 4, 9, 9, 'Stratholme', 1, 1);
 
 -- TBC Dungeons
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 5, 1, 0, 'Hellfire Citadel', 1, 1),
-(@ACTION_MENU + 5, 2, 0, 'Coilfang Reservoir', 1, 1),
-(@ACTION_MENU + 5, 3, 0, 'Auchindoun', 1, 1),
-(@ACTION_MENU + 5, 4, 0, 'Caverns of Time', 1, 1),
-(@ACTION_MENU + 5, 5, 0, 'The Botanica', 1, 1),
-(@ACTION_MENU + 5, 6, 0, 'The Mechanar', 1, 1),
-(@ACTION_MENU + 5, 7, 0, "Magisters' Terrace", 1, 1);
+(@ACTION_MENU + 5, 1, 9, 'Hellfire Citadel', 1, 1),
+(@ACTION_MENU + 5, 2, 9, 'Coilfang Reservoir', 1, 1),
+(@ACTION_MENU + 5, 3, 9, 'Auchindoun', 1, 1),
+(@ACTION_MENU + 5, 4, 9, 'Caverns of Time', 1, 1),
+(@ACTION_MENU + 5, 5, 9, 'The Botanica', 1, 1),
+(@ACTION_MENU + 5, 6, 9, 'The Mechanar', 1, 1),
+(@ACTION_MENU + 5, 7, 9, "Magisters' Terrace", 1, 1);
 
 -- WOTLK Dungeons
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 6, 1, 0, 'Utgarde Keep', 1, 1),
-(@ACTION_MENU + 6, 2, 0, 'The Nexus', 1, 1),
-(@ACTION_MENU + 6, 3, 0, 'The Pit of Narjun', 1, 1),
-(@ACTION_MENU + 6, 4, 0, "Drak'Tharon Keep", 1, 1),
-(@ACTION_MENU + 6, 5, 0, 'The Violet Hold', 1, 1),
-(@ACTION_MENU + 6, 6, 0, 'Gundrak', 1, 1),
-(@ACTION_MENU + 6, 7, 0, 'The Halls of Stone', 1, 1),
-(@ACTION_MENU + 6, 8, 0, 'The Halls of Lightning', 1, 1),
-(@ACTION_MENU + 6, 9, 0, 'The Culling of Stratholme', 1, 1),
-(@ACTION_MENU + 6, 10, 0, 'Trial of the Champion', 1, 1),
-(@ACTION_MENU + 6, 11, 0, 'Utgarde Pinnacle', 1, 1),
-(@ACTION_MENU + 6, 12, 0, 'The Frozen Halls', 1, 1);
+(@ACTION_MENU + 6, 1, 9, 'Utgarde Keep', 1, 1),
+(@ACTION_MENU + 6, 2, 9, 'The Nexus', 1, 1),
+(@ACTION_MENU + 6, 3, 9, 'The Pit of Narjun', 1, 1),
+(@ACTION_MENU + 6, 4, 9, "Drak'Tharon Keep", 1, 1),
+(@ACTION_MENU + 6, 5, 9, 'The Violet Hold', 1, 1),
+(@ACTION_MENU + 6, 6, 9, 'Gundrak', 1, 1),
+(@ACTION_MENU + 6, 7, 9, 'The Halls of Stone', 1, 1),
+(@ACTION_MENU + 6, 8, 9, 'The Halls of Lightning', 1, 1),
+(@ACTION_MENU + 6, 9, 9, 'The Culling of Stratholme', 1, 1),
+(@ACTION_MENU + 6, 10, 9, 'Trial of the Champion', 1, 1),
+(@ACTION_MENU + 6, 11, 9, 'Utgarde Pinnacle', 1, 1),
+(@ACTION_MENU + 6, 12, 9, 'The Frozen Halls', 1, 1);
 
 -- Raids 1
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 7, 1, 0, 'Blackwing Lair', 1, 1),
-(@ACTION_MENU + 7, 2, 0, 'The Molten Core', 1, 1),
-(@ACTION_MENU + 7, 3, 0, "Zul'Gurub", 1, 1),
-(@ACTION_MENU + 7, 4, 0, "The Ruins of Ahn'Qiraj", 1, 1),
-(@ACTION_MENU + 7, 5, 0, "Ahn'Qiraj", 1, 1),
-(@ACTION_MENU + 7, 6, 0, 'The Sunwell Plateau', 1, 1),
-(@ACTION_MENU + 7, 7, 0, 'The Tempest Keep', 1, 1),
-(@ACTION_MENU + 7, 8, 0, 'The Black Temple', 1, 1),
-(@ACTION_MENU + 7, 9, 0, 'Serpentshrine Cavern', 1, 1),
-(@ACTION_MENU + 7, 10, 0, 'Hyjal Summit', 1, 1);
+(@ACTION_MENU + 7, 1, 9, 'Blackwing Lair', 1, 1),
+(@ACTION_MENU + 7, 2, 9, 'The Molten Core', 1, 1),
+(@ACTION_MENU + 7, 3, 9, "Zul'Gurub", 1, 1),
+(@ACTION_MENU + 7, 4, 9, "The Ruins of Ahn'Qiraj", 1, 1),
+(@ACTION_MENU + 7, 5, 9, "Ahn'Qiraj", 1, 1),
+(@ACTION_MENU + 7, 6, 9, 'The Sunwell Plateau', 1, 1),
+(@ACTION_MENU + 7, 7, 9, 'The Tempest Keep', 1, 1),
+(@ACTION_MENU + 7, 8, 9, 'The Black Temple', 1, 1),
+(@ACTION_MENU + 7, 9, 9, 'Serpentshrine Cavern', 1, 1),
+(@ACTION_MENU + 7, 10, 9, 'Hyjal Summit', 1, 1);
 
 -- Raids 2
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 8, 1, 0, "Magtheridon's Lair", 1, 1),
-(@ACTION_MENU + 8, 2, 0, "Gruul's Lair", 1, 1),
-(@ACTION_MENU + 8, 3, 0, "Zul'Aman", 1, 1),
-(@ACTION_MENU + 8, 4, 0, "Karazhan", 1, 1),
-(@ACTION_MENU + 8, 5, 0, 'The Vault of Archavon', 1, 1),
-(@ACTION_MENU + 8, 6, 0, "Onyxia's Lair", 1, 1),
-(@ACTION_MENU + 8, 7, 0, 'Naxxramas', 1, 1),
-(@ACTION_MENU + 8, 8, 0, 'The Trial of the Crusader', 1, 1),
-(@ACTION_MENU + 8, 9, 0, 'The Eye of Eternity', 1, 1),
-(@ACTION_MENU + 8, 10, 0, 'Ulduar', 1, 1),
-(@ACTION_MENU + 8, 11, 0, 'The Obsidian Sanctum', 1, 1),
-(@ACTION_MENU + 8, 12, 0, 'Icecrown Citadel', 1, 1);
+(@ACTION_MENU + 8, 1, 9, "Magtheridon's Lair", 1, 1),
+(@ACTION_MENU + 8, 2, 9, "Gruul's Lair", 1, 1),
+(@ACTION_MENU + 8, 3, 9, "Zul'Aman", 1, 1),
+(@ACTION_MENU + 8, 4, 9, "Karazhan", 1, 1),
+(@ACTION_MENU + 8, 5, 9, 'The Vault of Archavon', 1, 1),
+(@ACTION_MENU + 8, 6, 9, "Onyxia's Lair", 1, 1),
+(@ACTION_MENU + 8, 7, 9, 'Naxxramas', 1, 1),
+(@ACTION_MENU + 8, 8, 9, 'The Trial of the Crusader', 1, 1),
+(@ACTION_MENU + 8, 9, 9, 'The Eye of Eternity', 1, 1),
+(@ACTION_MENU + 8, 10, 9, 'Ulduar', 1, 1),
+(@ACTION_MENU + 8, 11, 9, 'The Obsidian Sanctum', 1, 1),
+(@ACTION_MENU + 8, 12, 9, 'Icecrown Citadel', 1, 1);
 
 -- Alliance Townships
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 9, 1, 0, 'Goldshire', 1, 1),
-(@ACTION_MENU + 9, 2, 0, 'Kharanos', 1, 1),
-(@ACTION_MENU + 9, 3, 0, 'Sentinel Hill', 1, 1),
-(@ACTION_MENU + 9, 4, 0, 'Bloodmyst Isle', 1, 1),
-(@ACTION_MENU + 9, 5, 0, 'Darkshore', 1, 1),
-(@ACTION_MENU + 9, 6, 0, 'Lakeshire', 1, 1),
-(@ACTION_MENU + 9, 7, 0, 'Darkshire', 1, 1),
-(@ACTION_MENU + 9, 8, 0, "The Isle of Quel'Danas", 1, 1);
+(@ACTION_MENU + 9, 1, 2, 'Goldshire', 1, 1),
+(@ACTION_MENU + 9, 2, 2, 'Kharanos', 1, 1),
+(@ACTION_MENU + 9, 3, 2, 'Sentinel Hill', 1, 1),
+(@ACTION_MENU + 9, 4, 2, 'Bloodmyst Isle', 1, 1),
+(@ACTION_MENU + 9, 5, 2, 'Darkshore', 1, 1),
+(@ACTION_MENU + 9, 6, 2, 'Lakeshire', 1, 1),
+(@ACTION_MENU + 9, 7, 2, 'Darkshire', 1, 1),
+(@ACTION_MENU + 9, 8, 2, "The Isle of Quel'Danas", 1, 1);
 
 -- Horde Townships
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 10, 1, 0, 'Razor Hill', 1, 1),
-(@ACTION_MENU + 10, 2, 0, 'Brill', 1, 1),
-(@ACTION_MENU + 10, 3, 0, 'Tranquillien', 1, 1),
-(@ACTION_MENU + 10, 4, 0, 'Dolanaar', 1, 1),
-(@ACTION_MENU + 10, 5, 0, 'Bloodhoof Village', 1, 1),
-(@ACTION_MENU + 10, 6, 0, 'The Crossroads', 1, 1),
-(@ACTION_MENU + 10, 7, 0, "The Isle of Quel'Danas", 1, 1);
+(@ACTION_MENU + 10, 1, 2, 'Razor Hill', 1, 1),
+(@ACTION_MENU + 10, 2, 2, 'Brill', 1, 1),
+(@ACTION_MENU + 10, 3, 2, 'Tranquillien', 1, 1),
+(@ACTION_MENU + 10, 4, 2, 'Dolanaar', 1, 1),
+(@ACTION_MENU + 10, 5, 2, 'Bloodhoof Village', 1, 1),
+(@ACTION_MENU + 10, 6, 2, 'The Crossroads', 1, 1),
+(@ACTION_MENU + 10, 7, 2, "The Isle of Quel'Danas", 1, 1);
 
 -- Wilderness 1
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 11, 1, 0, 'Silverpine Forest', 1, 1),
-(@ACTION_MENU + 11, 2, 0, 'Azuremyst Isle', 1, 1),
-(@ACTION_MENU + 11, 3, 0, 'Loch Modan', 1, 1),
-(@ACTION_MENU + 11, 4, 0, 'Eversong Woods', 1, 1),
-(@ACTION_MENU + 11, 5, 0, 'The Wetlands', 1, 1),
-(@ACTION_MENU + 11, 6, 0, 'Hillsbrad Foothills', 1, 1),
-(@ACTION_MENU + 11, 7, 0, 'Alterac Mountains', 1, 1),
-(@ACTION_MENU + 11, 8, 0, 'Arathi Highlands', 1, 1),
-(@ACTION_MENU + 11, 9, 0, 'Stranglethorn Vale', 1, 1),
-(@ACTION_MENU + 11, 10, 0, 'The Badlands', 1, 1),
-(@ACTION_MENU + 11, 11, 0, 'The Swamp of Sorrows', 1, 1),
-(@ACTION_MENU + 11, 12, 0, 'The Hinterlands', 1, 1);
+(@ACTION_MENU + 11, 1, 2, 'Silverpine Forest', 1, 1),
+(@ACTION_MENU + 11, 2, 2, 'Azuremyst Isle', 1, 1),
+(@ACTION_MENU + 11, 3, 2, 'Loch Modan', 1, 1),
+(@ACTION_MENU + 11, 4, 2, 'Eversong Woods', 1, 1),
+(@ACTION_MENU + 11, 5, 2, 'The Wetlands', 1, 1),
+(@ACTION_MENU + 11, 6, 2, 'Hillsbrad Foothills', 1, 1),
+(@ACTION_MENU + 11, 7, 2, 'Alterac Mountains', 1, 1),
+(@ACTION_MENU + 11, 8, 2, 'Arathi Highlands', 1, 1),
+(@ACTION_MENU + 11, 9, 2, 'Stranglethorn Vale', 1, 1),
+(@ACTION_MENU + 11, 10, 2, 'The Badlands', 1, 1),
+(@ACTION_MENU + 11, 11, 2, 'The Swamp of Sorrows', 1, 1),
+(@ACTION_MENU + 11, 12, 2, 'The Hinterlands', 1, 1);
 
 -- Wilderness 2
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 12, 1, 0, 'Ashenvale', 1, 1),
-(@ACTION_MENU + 12, 2, 0, 'Stonetalon Mountains', 1, 1),
-(@ACTION_MENU + 12, 3, 0, 'Thousand Needles', 1, 1),
-(@ACTION_MENU + 12, 4, 0, 'Desolace', 1, 1),
-(@ACTION_MENU + 12, 5, 0, 'Searing Gorge', 1, 1),
-(@ACTION_MENU + 12, 6, 0, 'The Blasted Lands', 1, 1),
-(@ACTION_MENU + 12, 7, 0, 'The Burning Steppes', 1, 1),
-(@ACTION_MENU + 12, 8, 0, 'Western Plaguelands', 1, 1);
+(@ACTION_MENU + 12, 1, 2, 'Ashenvale', 1, 1),
+(@ACTION_MENU + 12, 2, 2, 'Stonetalon Mountains', 1, 1),
+(@ACTION_MENU + 12, 3, 2, 'Thousand Needles', 1, 1),
+(@ACTION_MENU + 12, 4, 2, 'Desolace', 1, 1),
+(@ACTION_MENU + 12, 5, 2, 'Searing Gorge', 1, 1),
+(@ACTION_MENU + 12, 6, 2, 'The Blasted Lands', 1, 1),
+(@ACTION_MENU + 12, 7, 2, 'The Burning Steppes', 1, 1),
+(@ACTION_MENU + 12, 8, 2, 'Western Plaguelands', 1, 1);
 
 -- Wilderness 3
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 13, 1, 0, "Light's Hope Chapel", 1, 1),
-(@ACTION_MENU + 13, 2, 0, 'Gurubashi Arena', 1, 1),
-(@ACTION_MENU + 13, 3, 0, 'Dustwallow Marsh', 1, 1),
-(@ACTION_MENU + 13, 4, 0, 'Feralas', 1, 1),
-(@ACTION_MENU + 13, 5, 0, 'Azshara', 1, 1),
-(@ACTION_MENU + 13, 6, 0, 'Felwood', 1, 1),
-(@ACTION_MENU + 13, 7, 0, "Un'Goro Crater", 1, 1),
-(@ACTION_MENU + 13, 8, 0, 'Cenarion Hold', 1, 1);
+(@ACTION_MENU + 13, 1, 2, "Light's Hope Chapel", 1, 1),
+(@ACTION_MENU + 13, 2, 2, 'Gurubashi Arena', 1, 1),
+(@ACTION_MENU + 13, 3, 2, 'Dustwallow Marsh', 1, 1),
+(@ACTION_MENU + 13, 4, 2, 'Feralas', 1, 1),
+(@ACTION_MENU + 13, 5, 2, 'Azshara', 1, 1),
+(@ACTION_MENU + 13, 6, 2, 'Felwood', 1, 1),
+(@ACTION_MENU + 13, 7, 2, "Un'Goro Crater", 1, 1),
+(@ACTION_MENU + 13, 8, 2, 'Cenarion Hold', 1, 1);
 
 -- Outland Wilderness
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 14, 1, 0, 'Hellfire Peninsula', 1, 1),
-(@ACTION_MENU + 14, 2, 0, 'Cenarion Refuge', 1, 1),
-(@ACTION_MENU + 14, 3, 0, 'Terokkar Forest', 1, 1),
-(@ACTION_MENU + 14, 4, 0, 'Halaa', 1, 1),
-(@ACTION_MENU + 14, 5, 0, "Blade's Edge Mountains", 1, 1),
-(@ACTION_MENU + 14, 6, 0, 'Shadowmoon Valley', 1, 1);
+(@ACTION_MENU + 14, 1, 2, 'Hellfire Peninsula', 1, 1),
+(@ACTION_MENU + 14, 2, 2, 'Cenarion Refuge', 1, 1),
+(@ACTION_MENU + 14, 3, 2, 'Terokkar Forest', 1, 1),
+(@ACTION_MENU + 14, 4, 2, 'Halaa', 1, 1),
+(@ACTION_MENU + 14, 5, 2, "Blade's Edge Mountains", 1, 1),
+(@ACTION_MENU + 14, 6, 2, 'Shadowmoon Valley', 1, 1);
 
 -- Northrend Wilderness
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 15, 1, 0, 'Borean Tundra', 1, 1),
-(@ACTION_MENU + 15, 2, 0, 'Howling Fjord', 1, 1),
-(@ACTION_MENU + 15, 3, 0, "Dragonblight - Moa'ki Harbor", 1, 1),
-(@ACTION_MENU + 15, 4, 0, 'Grizzly Hills', 1, 1),
-(@ACTION_MENU + 15, 5, 0, "Zul'Drak", 1, 1),
-(@ACTION_MENU + 15, 6, 0, 'Sholazar Basin - Nesingwary Base Camp', 1, 1),
-(@ACTION_MENU + 15, 7, 0, 'Crystalsong Forest', 1, 1),
-(@ACTION_MENU + 15, 8, 0, 'The Storm Peaks - K3', 1, 1),
-(@ACTION_MENU + 15, 9, 0, 'Icecrown - The Shadow Vault', 1, 1);
+(@ACTION_MENU + 15, 1, 2, 'Borean Tundra', 1, 1),
+(@ACTION_MENU + 15, 2, 2, 'Howling Fjord', 1, 1),
+(@ACTION_MENU + 15, 3, 2, "Dragonblight - Moa'ki Harbor", 1, 1),
+(@ACTION_MENU + 15, 4, 2, 'Grizzly Hills', 1, 1),
+(@ACTION_MENU + 15, 5, 2, "Zul'Drak", 1, 1),
+(@ACTION_MENU + 15, 6, 2, 'Sholazar Basin - Nesingwary Base Camp', 1, 1),
+(@ACTION_MENU + 15, 7, 2, 'Crystalsong Forest', 1, 1),
+(@ACTION_MENU + 15, 8, 2, 'The Storm Peaks - K3', 1, 1),
+(@ACTION_MENU + 15, 9, 2, 'Icecrown - The Shadow Vault', 1, 1);
 
 -- Tamed Wilderness
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@ACTION_MENU + 16, 1, 0, 'Sunrock Retreat', 1, 1),
-(@ACTION_MENU + 16, 2, 0, 'Fishing Resort', 1, 1),
-(@ACTION_MENU + 16, 3, 0, "Koiter's Shrine", 1, 1),
-(@ACTION_MENU + 16, 4, 0, "Dead King's Crypt", 1, 1),
-(@ACTION_MENU + 16, 5, 0, "Honor's Stand", 1, 1),
-(@ACTION_MENU + 16, 6, 0, 'Shatterspear Vale', 1, 1);
+(@ACTION_MENU + 16, 1, 2, 'Sunrock Retreat', 1, 1),
+(@ACTION_MENU + 16, 2, 2, 'Fishing Resort', 1, 1),
+(@ACTION_MENU + 16, 3, 2, "Koiter's Shrine", 1, 1),
+(@ACTION_MENU + 16, 4, 2, "Dead King's Crypt", 1, 1),
+(@ACTION_MENU + 16, 5, 2, "Honor's Stand", 1, 1),
+(@ACTION_MENU + 16, 6, 2, 'Shatterspear Vale', 1, 1);
 
 -- Easter Egg Zones (Tofu addition, from the location list of azerothcore/mod-guild-zone-system adb3ffa; menus 900003 to 900007; GM Island left out)
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
-(@GOSSIP_MENU + 3, 1, 0, 'Eastern Kingdoms 1', 1, 1, @GOSSIP_MENU + 4),
-(@GOSSIP_MENU + 3, 2, 0, 'Eastern Kingdoms 2', 1, 1, @GOSSIP_MENU + 5),
-(@GOSSIP_MENU + 3, 3, 0, 'Kalimdor', 1, 1, @GOSSIP_MENU + 6),
-(@GOSSIP_MENU + 3, 4, 0, 'Outland', 1, 1, @GOSSIP_MENU + 7);
+(@GOSSIP_MENU + 3, 1, 4, 'Eastern Kingdoms 1', 1, 1, @GOSSIP_MENU + 4),
+(@GOSSIP_MENU + 3, 2, 4, 'Eastern Kingdoms 2', 1, 1, @GOSSIP_MENU + 5),
+(@GOSSIP_MENU + 3, 3, 4, 'Kalimdor', 1, 1, @GOSSIP_MENU + 6),
+(@GOSSIP_MENU + 3, 4, 4, 'Outland', 1, 1, @GOSSIP_MENU + 7);
 
 -- Easter Egg Zones: Eastern Kingdoms 1
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@GOSSIP_MENU + 4, 1, 0, 'Northshire Abbey Fishing Spot', 1, 1),
-(@GOSSIP_MENU + 4, 2, 0, 'Stormwind Empty Jail', 1, 1),
-(@GOSSIP_MENU + 4, 3, 0, 'Stormwind Cut-Throat Alley', 1, 1),
-(@GOSSIP_MENU + 4, 4, 0, 'Villains\' Camp (Elwynn Forest)', 1, 1),
-(@GOSSIP_MENU + 4, 5, 0, 'Karazhan Smiley', 1, 1),
-(@GOSSIP_MENU + 4, 6, 0, 'Well of the Forgotten (Karazhan Crypt)', 1, 1),
-(@GOSSIP_MENU + 4, 7, 0, 'Outside Zul\'Gurub', 1, 1),
-(@GOSSIP_MENU + 4, 8, 0, 'Stranglethorn Secret Cave', 1, 1),
-(@GOSSIP_MENU + 4, 9, 0, 'Ortell\'s Hideout', 1, 1),
-(@GOSSIP_MENU + 4, 10, 0, 'Crashed Gnome Airplane', 1, 1);
+(@GOSSIP_MENU + 4, 1, 2, 'Northshire Abbey Fishing Spot', 1, 1),
+(@GOSSIP_MENU + 4, 2, 2, 'Stormwind Empty Jail', 1, 1),
+(@GOSSIP_MENU + 4, 3, 2, 'Stormwind Cut-Throat Alley', 1, 1),
+(@GOSSIP_MENU + 4, 4, 2, 'Villains\' Camp (Elwynn Forest)', 1, 1),
+(@GOSSIP_MENU + 4, 5, 2, 'Karazhan Smiley', 1, 1),
+(@GOSSIP_MENU + 4, 6, 2, 'Well of the Forgotten (Karazhan Crypt)', 1, 1),
+(@GOSSIP_MENU + 4, 7, 2, 'Outside Zul\'Gurub', 1, 1),
+(@GOSSIP_MENU + 4, 8, 2, 'Stranglethorn Secret Cave', 1, 1),
+(@GOSSIP_MENU + 4, 9, 2, 'Ortell\'s Hideout', 1, 1),
+(@GOSSIP_MENU + 4, 10, 2, 'Crashed Gnome Airplane', 1, 1);
 
 -- Easter Egg Zones: Eastern Kingdoms 2
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@GOSSIP_MENU + 5, 1, 0, 'Old Ironforge', 1, 1),
-(@GOSSIP_MENU + 5, 2, 0, 'Ironforge Airport', 1, 1),
-(@GOSSIP_MENU + 5, 3, 0, 'Forgotten Gnome Camp', 1, 1),
-(@GOSSIP_MENU + 5, 4, 0, 'Dwarven Village (Wetlands)', 1, 1),
-(@GOSSIP_MENU + 5, 5, 0, 'Wetlands Mountain Camp', 1, 1),
-(@GOSSIP_MENU + 5, 6, 0, 'Harbor House', 1, 1),
-(@GOSSIP_MENU + 5, 7, 0, 'Dwarven Village (Arathi Coast)', 1, 1),
-(@GOSSIP_MENU + 5, 8, 0, 'Outside Shadowfang Keep', 1, 1),
-(@GOSSIP_MENU + 5, 9, 0, 'Undercity Top Tier', 1, 1),
-(@GOSSIP_MENU + 5, 10, 0, 'Outside Stratholme', 1, 1),
-(@GOSSIP_MENU + 5, 11, 0, 'Quel\'Thalas Tower', 1, 1);
+(@GOSSIP_MENU + 5, 1, 2, 'Old Ironforge', 1, 1),
+(@GOSSIP_MENU + 5, 2, 2, 'Ironforge Airport', 1, 1),
+(@GOSSIP_MENU + 5, 3, 2, 'Forgotten Gnome Camp', 1, 1),
+(@GOSSIP_MENU + 5, 4, 2, 'Dwarven Village (Wetlands)', 1, 1),
+(@GOSSIP_MENU + 5, 5, 2, 'Wetlands Mountain Camp', 1, 1),
+(@GOSSIP_MENU + 5, 6, 2, 'Harbor House', 1, 1),
+(@GOSSIP_MENU + 5, 7, 2, 'Dwarven Village (Arathi Coast)', 1, 1),
+(@GOSSIP_MENU + 5, 8, 2, 'Outside Shadowfang Keep', 1, 1),
+(@GOSSIP_MENU + 5, 9, 2, 'Undercity Top Tier', 1, 1),
+(@GOSSIP_MENU + 5, 10, 2, 'Outside Stratholme', 1, 1),
+(@GOSSIP_MENU + 5, 11, 2, 'Quel\'Thalas Tower', 1, 1);
 
 -- Easter Egg Zones: Kalimdor
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@GOSSIP_MENU + 6, 1, 0, 'Hyjal World Tree', 1, 1),
-(@GOSSIP_MENU + 6, 2, 0, 'Furbolg Camp (Teldrassil)', 1, 1),
-(@GOSSIP_MENU + 6, 3, 0, 'Troll Village (Darkshore)', 1, 1),
-(@GOSSIP_MENU + 6, 4, 0, 'Stonetalon Logging Camp', 1, 1),
-(@GOSSIP_MENU + 6, 5, 0, 'Stonetalon Ruins', 1, 1),
-(@GOSSIP_MENU + 6, 6, 0, 'Tauren Camp (Red Rock, Mulgore)', 1, 1),
-(@GOSSIP_MENU + 6, 7, 0, 'Ring of Valor (Orgrimmar)', 1, 1),
-(@GOSSIP_MENU + 6, 8, 0, 'Goblin Village (Tanaris Coast)', 1, 1),
-(@GOSSIP_MENU + 6, 9, 0, 'Tauren Village (Silithus Coast)', 1, 1),
-(@GOSSIP_MENU + 6, 10, 0, 'Azshara Crater: Alliance Side', 1, 1),
-(@GOSSIP_MENU + 6, 11, 0, 'Azshara Crater: Horde Side', 1, 1);
+(@GOSSIP_MENU + 6, 1, 2, 'Hyjal World Tree', 1, 1),
+(@GOSSIP_MENU + 6, 2, 2, 'Furbolg Camp (Teldrassil)', 1, 1),
+(@GOSSIP_MENU + 6, 3, 2, 'Troll Village (Darkshore)', 1, 1),
+(@GOSSIP_MENU + 6, 4, 2, 'Stonetalon Logging Camp', 1, 1),
+(@GOSSIP_MENU + 6, 5, 2, 'Stonetalon Ruins', 1, 1),
+(@GOSSIP_MENU + 6, 6, 2, 'Tauren Camp (Red Rock, Mulgore)', 1, 1),
+(@GOSSIP_MENU + 6, 7, 2, 'Ring of Valor (Orgrimmar)', 1, 1),
+(@GOSSIP_MENU + 6, 8, 2, 'Goblin Village (Tanaris Coast)', 1, 1),
+(@GOSSIP_MENU + 6, 9, 2, 'Tauren Village (Silithus Coast)', 1, 1),
+(@GOSSIP_MENU + 6, 10, 2, 'Azshara Crater: Alliance Side', 1, 1),
+(@GOSSIP_MENU + 6, 11, 2, 'Azshara Crater: Horde Side', 1, 1);
 
 -- Easter Egg Zones: Outland
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@GOSSIP_MENU + 7, 1, 0, 'Nagrand: Newton\'s Remains', 1, 1),
-(@GOSSIP_MENU + 7, 2, 0, 'Nagrand: Tomb', 1, 1),
-(@GOSSIP_MENU + 7, 3, 0, 'Nagrand: Challe\'s Home for Little Tykes', 1, 1),
-(@GOSSIP_MENU + 7, 4, 0, 'Netherstorm: Nova\'s Shrine', 1, 1);
+(@GOSSIP_MENU + 7, 1, 2, 'Nagrand: Newton\'s Remains', 1, 1),
+(@GOSSIP_MENU + 7, 2, 2, 'Nagrand: Tomb', 1, 1),
+(@GOSSIP_MENU + 7, 3, 2, 'Nagrand: Challe\'s Home for Little Tykes', 1, 1),
+(@GOSSIP_MENU + 7, 4, 2, 'Netherstorm: Nova\'s Shrine', 1, 1);
+
+-- Starter Zones (Tofu addition, 2026-11-22): menu 900008, opened from Miscellaneous option 9; each teleport goes to the race's new-character spawn point (playercreateinfo), SmartAI rows 237 to 244. Gnomes share Coldridge Valley and Trolls share the Valley of Trials in 3.3.5a; the Death Knight start (Acherus) is left out.
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU + 8, 1, 2, 'Northshire Valley (Human)', 1, 1),
+(@GOSSIP_MENU + 8, 2, 2, 'Coldridge Valley (Dwarf, Gnome)', 1, 1),
+(@GOSSIP_MENU + 8, 3, 2, 'Shadowglen (Night Elf)', 1, 1),
+(@GOSSIP_MENU + 8, 4, 2, 'Ammen Vale (Draenei)', 1, 1),
+(@GOSSIP_MENU + 8, 5, 2, 'Valley of Trials (Orc, Troll)', 1, 1),
+(@GOSSIP_MENU + 8, 6, 2, 'Camp Narache (Tauren)', 1, 1),
+(@GOSSIP_MENU + 8, 7, 2, 'Deathknell (Undead)', 1, 1),
+(@GOSSIP_MENU + 8, 8, 2, 'Sunstrider Isle (Blood Elf)', 1, 1);
+
+-- Back (Tofu addition, 2026-11-22): the last option on every page except the main menu; it opens the page that led here. The core switches pages from ActionMenuID, so these rows need no SmartAI.
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
+(@GOSSIP_MENU + 1, 4, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@GOSSIP_MENU + 2, 10, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@GOSSIP_MENU + 3, 5, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@GOSSIP_MENU + 4, 11, 7, 'Back', 1, 1, @GOSSIP_MENU + 3),
+(@GOSSIP_MENU + 5, 12, 7, 'Back', 1, 1, @GOSSIP_MENU + 3),
+(@GOSSIP_MENU + 6, 12, 7, 'Back', 1, 1, @GOSSIP_MENU + 3),
+(@GOSSIP_MENU + 7, 5, 7, 'Back', 1, 1, @GOSSIP_MENU + 3),
+(@GOSSIP_MENU + 8, 9, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 0, 5, 7, 'Back', 1, 1, @GOSSIP_MENU + 1),
+(@ACTION_MENU + 1, 5, 7, 'Back', 1, 1, @GOSSIP_MENU + 1),
+(@ACTION_MENU + 2, 7, 7, 'Back', 1, 1, @GOSSIP_MENU + 1),
+(@ACTION_MENU + 3, 11, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@ACTION_MENU + 4, 10, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@ACTION_MENU + 5, 8, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@ACTION_MENU + 6, 13, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@ACTION_MENU + 7, 11, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@ACTION_MENU + 8, 13, 7, 'Back', 1, 1, @GOSSIP_MENU),
+(@ACTION_MENU + 9, 9, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 10, 8, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 11, 13, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 12, 9, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 13, 9, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 14, 7, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 15, 10, 7, 'Back', 1, 1, @GOSSIP_MENU + 2),
+(@ACTION_MENU + 16, 7, 7, 'Back', 1, 1, @GOSSIP_MENU + 2);
 
 -- --------------------------------------------------------------------------------------
 -- Smart Scripts
@@ -558,4 +600,12 @@ INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_
 (@ENTRY, 0, 233, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 2, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -2140.501953, 9142.6875, 137.041855, 0.20813, "Easter Egg: Nagrand: Tomb"),
 (@ENTRY, 0, 234, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 3, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -483.401794, 7461.944824, 186.120987, 3.53037, "Easter Egg: Nagrand: Challe's Home for Little Tykes"),
 (@ENTRY, 0, 235, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 4, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, 2387.753906, 3191.757324, 152.669388, 5.20327, "Easter Egg: Netherstorm: Nova's Shrine"),
-(@ENTRY, 0, 236, 0, 62, 0, 100, 0, @GOSSIP_MENU, 1, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 16228.407, 16306.691, 29.263594, 6.263572, "Guild Hub");
+(@ENTRY, 0, 236, 0, 62, 0, 100, 0, @GOSSIP_MENU, 1, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 16228.407, 16306.691, 29.263594, 6.263572, "Guild Hub"),
+(@ENTRY, 0, 237, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 1, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -8949.95, -132.493, 83.5312, 0, "Starter Zone: Northshire Valley (Human)"),
+(@ENTRY, 0, 238, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 2, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -6240.32, 331.033, 382.758, 6.17716, "Starter Zone: Coldridge Valley (Dwarf, Gnome)"),
+(@ENTRY, 0, 239, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 3, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 10311.3, 832.463, 1326.41, 5.69632, "Starter Zone: Shadowglen (Night Elf)"),
+(@ENTRY, 0, 240, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 4, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -3961.64, -13931.2, 100.615, 2.08364, "Starter Zone: Ammen Vale (Draenei)"),
+(@ENTRY, 0, 241, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 5, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -618.518, -4251.67, 38.718, 0, "Starter Zone: Valley of Trials (Orc, Troll)"),
+(@ENTRY, 0, 242, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 6, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -2917.58, -257.98, 52.9968, 0, "Starter Zone: Camp Narache (Tauren)"),
+(@ENTRY, 0, 243, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 7, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 1676.71, 1678.31, 121.67, 2.70526, "Starter Zone: Deathknell (Undead)"),
+(@ENTRY, 0, 244, 0, 62, 0, 100, 0, @GOSSIP_MENU + 8, 8, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, 10349.6, -6357.29, 33.4026, 5.31605, "Starter Zone: Sunstrider Isle (Blood Elf)");
