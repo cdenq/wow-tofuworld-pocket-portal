@@ -1,10 +1,10 @@
 -- --------------------------------------------------------------------------------------
 -- Pocket Portal (Tofu Worldview fork)
 --
--- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900007 and 900010 to 900026 (every page shows greeting npc_text 900012), and the NPC's SmartAI teleport rows.
+-- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900007 and 900010 to 900026 (every page shows greeting npc_text 900013), and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900012 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); NPC despawn 30 seconds.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); NPC despawn 30 seconds.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
@@ -12,8 +12,8 @@
 --   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 199
 --   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 175
 --   SELECT entry, name, subname FROM acore_world.creature_template WHERE entry = 900000; -- expected 900000, A.R.T.H.A.S, Teleporter
---   SELECT COUNT(*), MIN(TextID), MAX(TextID) FROM acore_world.gossip_menu WHERE MenuID BETWEEN 900000 AND 900026; -- expected 25, 900012, 900012
---   SELECT ID, text0_0 FROM acore_world.npc_text WHERE ID = 900012; -- expected 1 row with the ONLINE line
+--   SELECT COUNT(*), MIN(TextID), MAX(TextID) FROM acore_world.gossip_menu WHERE MenuID BETWEEN 900000 AND 900026; -- expected 25, 900013, 900013
+--   SELECT ID, text0_0 FROM acore_world.npc_text WHERE ID = 900013; -- expected 1 row with the ONLINE line
 -- --------------------------------------------------------------------------------------
 SET
 @ITEMENTRY      := 900000,
@@ -35,7 +35,7 @@ INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `displayid`, 
 
 SET @ENTRY       := 900000;
 SET @NAME_NPC    := 'A.R.T.H.A.S';
-SET @GREET_TEXT  := 900012; -- npc_text shown on every menu page (registry: npc_text 900012, pocket-portal)
+SET @GREET_TEXT  := 900013; -- npc_text shown on every menu page (registry: npc_text 900013, pocket-portal)
 SET @GOSSIP_MENU := 900000;
 SET @ACTION_MENU := 900010; -- Submenus 900010 to 900026
 
