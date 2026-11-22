@@ -4,7 +4,7 @@
 -- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900007 and 900010 to 900026 (every page shows greeting npc_text 900013), and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); NPC despawn 30 seconds.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); main menu reordered 2026-11-22 to Guild Hub (option 1), Cities, Miscellaneous, then the rest; NPC despawn 30 seconds.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
@@ -75,20 +75,21 @@ DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSI
 DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @ACTION_MENU AND (@ACTION_MENU + 16);
 
 -- MAIN MENU
+-- The client lists options by OptionID: Guild Hub, Cities, Miscellaneous first (Tofu order, 2026-11-22), then the rest in their earlier order.
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
-(@GOSSIP_MENU, 1, 0, 'Cities', 1, 1, @GOSSIP_MENU + 1),
-(@GOSSIP_MENU, 2, 0, 'Classic Dungeons 1', 1, 1, @ACTION_MENU + 3),
-(@GOSSIP_MENU, 3, 0, 'Classic Dungeons 2', 1, 1, @ACTION_MENU + 4),
-(@GOSSIP_MENU, 4, 0, 'TBC Dungeons', 1, 1, @ACTION_MENU + 5),
-(@GOSSIP_MENU, 5, 0, 'WotLK Dungeons', 1, 1, @ACTION_MENU + 6),
-(@GOSSIP_MENU, 6, 0, 'Raids 1', 1, 1, @ACTION_MENU + 7),
-(@GOSSIP_MENU, 7, 0, 'Raids 2', 1, 1, @ACTION_MENU + 8),
-(@GOSSIP_MENU, 8, 0, 'Miscellaneous', 1, 1, @GOSSIP_MENU + 2),
-(@GOSSIP_MENU, 9, 0, 'Easter Egg Zones', 1, 1, @GOSSIP_MENU + 3);
+(@GOSSIP_MENU, 2, 0, 'Cities', 1, 1, @GOSSIP_MENU + 1),
+(@GOSSIP_MENU, 3, 0, 'Miscellaneous', 1, 1, @GOSSIP_MENU + 2),
+(@GOSSIP_MENU, 4, 0, 'Classic Dungeons 1', 1, 1, @ACTION_MENU + 3),
+(@GOSSIP_MENU, 5, 0, 'Classic Dungeons 2', 1, 1, @ACTION_MENU + 4),
+(@GOSSIP_MENU, 6, 0, 'TBC Dungeons', 1, 1, @ACTION_MENU + 5),
+(@GOSSIP_MENU, 7, 0, 'WotLK Dungeons', 1, 1, @ACTION_MENU + 6),
+(@GOSSIP_MENU, 8, 0, 'Raids 1', 1, 1, @ACTION_MENU + 7),
+(@GOSSIP_MENU, 9, 0, 'Raids 2', 1, 1, @ACTION_MENU + 8),
+(@GOSSIP_MENU, 10, 0, 'Easter Egg Zones', 1, 1, @GOSSIP_MENU + 3);
 
--- Guild Hub (Tofu addition): direct teleport to the upper floor of the GM Island building, SmartAI row 236
+-- Guild Hub (Tofu addition): option 1, direct teleport to the upper floor of the GM Island building, SmartAI row 236
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
-(@GOSSIP_MENU, 10, 0, 'Guild Hub', 1, 1);
+(@GOSSIP_MENU, 1, 0, 'Guild Hub', 1, 1);
 
 -- Cities Submenu
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
@@ -557,4 +558,4 @@ INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_
 (@ENTRY, 0, 233, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 2, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -2140.501953, 9142.6875, 137.041855, 0.20813, "Easter Egg: Nagrand: Tomb"),
 (@ENTRY, 0, 234, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 3, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, -483.401794, 7461.944824, 186.120987, 3.53037, "Easter Egg: Nagrand: Challe's Home for Little Tykes"),
 (@ENTRY, 0, 235, 0, 62, 0, 100, 0, @GOSSIP_MENU + 7, 4, 0, 0, 62, 530, 0, 0, 0, 0, 0, 7, 0, 0, 0, 2387.753906, 3191.757324, 152.669388, 5.20327, "Easter Egg: Netherstorm: Nova's Shrine"),
-(@ENTRY, 0, 236, 0, 62, 0, 100, 0, @GOSSIP_MENU, 10, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 16228.407, 16306.691, 29.263594, 6.263572, "Guild Hub");
+(@ENTRY, 0, 236, 0, 62, 0, 100, 0, @GOSSIP_MENU, 1, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 16228.407, 16306.691, 29.263594, 6.263572, "Guild Hub");
