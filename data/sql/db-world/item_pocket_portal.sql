@@ -1,16 +1,19 @@
 -- --------------------------------------------------------------------------------------
 -- Pocket Portal (Tofu Worldview fork)
 --
--- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "Tofu Portal", gossip menus 900000 to 900007 and 900010 to 900026, and the NPC's SmartAI teleport rows.
+-- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900007 and 900010 to 900026 (every page shows greeting npc_text 900012), and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal"; IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); NPC despawn 30 seconds.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900012 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); NPC despawn 30 seconds.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
 --   SELECT COUNT(*) FROM acore_world.npc_vendor WHERE item = 900000; -- expected 0
 --   SELECT COUNT(*) FROM acore_world.gossip_menu_option WHERE MenuID BETWEEN 900000 AND 900026; -- expected 199
 --   SELECT COUNT(*) FROM acore_world.smart_scripts WHERE entryorguid = 900000 AND source_type = 0; -- expected 175
+--   SELECT entry, name, subname FROM acore_world.creature_template WHERE entry = 900000; -- expected 900000, A.R.T.H.A.S, Teleporter
+--   SELECT COUNT(*), MIN(TextID), MAX(TextID) FROM acore_world.gossip_menu WHERE MenuID BETWEEN 900000 AND 900026; -- expected 25, 900012, 900012
+--   SELECT ID, text0_0 FROM acore_world.npc_text WHERE ID = 900012; -- expected 1 row with the ONLINE line
 -- --------------------------------------------------------------------------------------
 SET
 @ITEMENTRY      := 900000,
@@ -28,10 +31,11 @@ DELETE FROM `npc_vendor` WHERE `item` = @ITEMENTRY;
 -- --------------------------------------------------------------------------------------
 DELETE FROM `item_template` WHERE `entry` = @ITEMENTRY;
 INSERT INTO `item_template` (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `maxcount`, `stackable`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `bonding`, `description`, `Material`, `ScriptName`, `VerifiedBuild`) VALUES
-(@ITEMENTRY, 0, 0, @NAME, 28862, @QUALITY, @FLAGS, 1, 0, 0, 0, -1, -1, 1, 0, 1, 1, @SPELL, 0, 0, -1, 0, -1, 1, 'Summons the Tofu Portal, which can take you almost anywhere.', -1, @SCRIPTNAME, 12340);
+(@ITEMENTRY, 0, 0, @NAME, 28862, @QUALITY, @FLAGS, 1, 0, 0, 0, -1, -1, 1, 0, 1, 1, @SPELL, 0, 0, -1, 0, -1, 1, 'Summons A.R.T.H.A.S, which can take you almost anywhere.', -1, @SCRIPTNAME, 12340);
 
 SET @ENTRY       := 900000;
-SET @NAME_NPC    := 'Tofu Portal';
+SET @NAME_NPC    := 'A.R.T.H.A.S';
+SET @GREET_TEXT  := 900012; -- npc_text shown on every menu page (registry: npc_text 900012, pocket-portal)
 SET @GOSSIP_MENU := 900000;
 SET @ACTION_MENU := 900010; -- Submenus 900010 to 900026
 
@@ -41,7 +45,7 @@ SET @ACTION_MENU := 900010; -- Submenus 900010 to 900026
 -- --------------------------------------------------------------------------------------
 DELETE FROM `creature_template` WHERE `entry` = @ENTRY;
 INSERT INTO `creature_template` (`entry`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `rank`, `DamageModifier`, `unit_class`, `unit_flags`, `type`, `type_flags`, `RegenHealth`, `flags_extra`, `AIName`) VALUES
-(@ENTRY, @NAME_NPC, 'Personal Teleporter', 'Directions', @GOSSIP_MENU, 60, 60, 1.56, 1.56, 1.56, 35, 1, 1, 1.14286, 1, 1, 1, 2, 7, 138936390, 1, 2, 'SmartAI');
+(@ENTRY, @NAME_NPC, 'Teleporter', 'Directions', @GOSSIP_MENU, 60, 60, 1.56, 1.56, 1.56, 35, 1, 1, 1.14286, 1, 1, 1, 2, 7, 138936390, 1, 2, 'SmartAI');
 
 DELETE FROM `creature_template_model` WHERE `CreatureID` = @ENTRY;
 INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`) VALUES
@@ -57,6 +61,16 @@ INSERT INTO `creature_template_movement` (`CreatureId`, `Ground`, `Swim`, `Fligh
 -- --------------------------------------------------------------------------------------
 
 DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 7);
+DELETE FROM `gossip_menu` WHERE `MenuID` BETWEEN @ACTION_MENU AND (@ACTION_MENU + 16);
+
+-- Greeting on every page: main menu, its submenus 900001 to 900007, and the destination menus 900010 to 900026
+DELETE FROM `npc_text` WHERE `ID` = @GREET_TEXT;
+INSERT INTO `npc_text` (`ID`, `text0_0`, `text0_1`, `BroadcastTextID0`, `lang0`, `Probability0`) VALUES
+(@GREET_TEXT, 'Arcane Robotic Teleportation & Hyperspace Access System: ONLINE.', 'Arcane Robotic Teleportation & Hyperspace Access System: ONLINE.', 0, 0, 1);
+INSERT INTO `gossip_menu` (`MenuID`, `TextID`) VALUES
+(@GOSSIP_MENU + 0, @GREET_TEXT), (@GOSSIP_MENU + 1, @GREET_TEXT), (@GOSSIP_MENU + 2, @GREET_TEXT), (@GOSSIP_MENU + 3, @GREET_TEXT), (@GOSSIP_MENU + 4, @GREET_TEXT), (@GOSSIP_MENU + 5, @GREET_TEXT), (@GOSSIP_MENU + 6, @GREET_TEXT), (@GOSSIP_MENU + 7, @GREET_TEXT),
+(@ACTION_MENU + 0, @GREET_TEXT), (@ACTION_MENU + 1, @GREET_TEXT), (@ACTION_MENU + 2, @GREET_TEXT), (@ACTION_MENU + 3, @GREET_TEXT), (@ACTION_MENU + 4, @GREET_TEXT), (@ACTION_MENU + 5, @GREET_TEXT), (@ACTION_MENU + 6, @GREET_TEXT), (@ACTION_MENU + 7, @GREET_TEXT), (@ACTION_MENU + 8, @GREET_TEXT),
+(@ACTION_MENU + 9, @GREET_TEXT), (@ACTION_MENU + 10, @GREET_TEXT), (@ACTION_MENU + 11, @GREET_TEXT), (@ACTION_MENU + 12, @GREET_TEXT), (@ACTION_MENU + 13, @GREET_TEXT), (@ACTION_MENU + 14, @GREET_TEXT), (@ACTION_MENU + 15, @GREET_TEXT), (@ACTION_MENU + 16, @GREET_TEXT);
 DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @GOSSIP_MENU AND (@GOSSIP_MENU + 7);
 DELETE FROM `gossip_menu_option` WHERE `MenuID` BETWEEN @ACTION_MENU AND (@ACTION_MENU + 16);
 
