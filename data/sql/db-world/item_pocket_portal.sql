@@ -4,7 +4,7 @@
 -- What it changes: item 900000 "Pocket Portal" (Heirloom quality, Bind-on-Account, cannot be sold or bought), teleporter NPC 900000 "A.R.T.H.A.S" <Teleporter>, gossip menus 900000 to 900008 and 900010 to 900026 (every page shows greeting npc_text 900013), and the NPC's SmartAI teleport rows.
 -- Target schema: acore_world (module SQL, applied by the worldserver updater with state MODULE).
 -- Restart: worldserver restart; players delete the client Cache folder.
--- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); main menu reordered 2026-11-22 to Guild Hub (option 1), Cities, Miscellaneous, then the rest; 2026-11-22: Back as the last option of every page except the main menu, option icons (4 opens a page, 2 teleport, 9 dungeon or raid teleport, 8 Guild Hub, 7 Back), and a Starter Zones page (menu 900008 under Miscellaneous, smart_scripts ids 237 to 244); NPC despawn 30 seconds.
+-- Tofu changes from upstream: NPC renamed from "Jeffery" to "Tofu Portal", then (2026-11-21) to "A.R.T.H.A.S" with subname "Teleporter" (was "Personal Teleporter") and greeting npc_text 900013 "Arcane Robotic Teleportation & Hyperspace Access System: ONLINE." on all 25 menu pages (before, the client showed its default greeting); IDs moved from item 701002, creature 128, menus 92000 and 1200000 into the Tofu custom range; no longer sold by Endora Moorehead (28715), every new character gets one from mod-tofu-starting-setup; SellPrice 0 and BuyPrice 0; spellcategory_1 cleared; the SmartAI "despawn closest creature" row removed (the C++ summon timer despawns the NPC); "Wilderness 3" label fixed; Easter Egg Zones menu (900003 to 900007, smart_scripts ids 200 to 235) with 36 locations of mod-guild-zone-system (GM Island left out); main menu option 10 Guild Hub (smart_scripts id 236, teleport to the GM Island building); main menu reordered 2026-11-22 to Guild Hub (option 1), Cities, Miscellaneous, then the rest; 2026-11-22: Back as the last option of every page except the main menu, option icons (4 opens a page, 2 teleport, 9 dungeon or raid teleport, 8 Guild Hub, 7 Back), and a Starter Zones page (menu 900008 under Miscellaneous, smart_scripts ids 237 to 244); 2026-11-23: Gurubashi Arena moved from Wilderness 3 to main menu option 11 (last), teleporting to the arena floor (smart_scripts id 6); NPC despawn 30 seconds.
 -- Re-runnable: every insert is preceded by a delete of the same keys.
 -- Check:
 --   SELECT entry, name, Quality, Flags, bonding, BuyPrice, SellPrice, ScriptName FROM acore_world.item_template WHERE entry = 900000; -- expected 1 row: Pocket Portal, 7, 134217728, 1, 0, 0, pocket_portal
@@ -92,6 +92,10 @@ INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionTex
 -- Guild Hub (Tofu addition): option 1, direct teleport to the upper floor of the GM Island building, SmartAI row 236
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
 (@GOSSIP_MENU, 1, 8, 'Guild Hub', 1, 1);
+
+-- Gurubashi Arena (Tofu, 2026-11-23): option 11, the last main-menu option, direct teleport to the arena floor (free-for-all PvP), SmartAI row 6; it was option 2 of Wilderness 3, outside the arena at -13181.8, 339.356, 42.9805
+INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
+(@GOSSIP_MENU, 11, 2, 'Gurubashi Arena', 1, 1);
 
 -- Cities Submenu
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`, `ActionMenuID`) VALUES
@@ -264,7 +268,6 @@ INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionTex
 -- Wilderness 3
 INSERT INTO `gossip_menu_option` (`MenuID`, `OptionID`, `OptionIcon`, `OptionText`, `OptionType`, `OptionNpcFlag`) VALUES
 (@ACTION_MENU + 13, 1, 2, "Light's Hope Chapel", 1, 1),
-(@ACTION_MENU + 13, 2, 2, 'Gurubashi Arena', 1, 1),
 (@ACTION_MENU + 13, 3, 2, 'Dustwallow Marsh', 1, 1),
 (@ACTION_MENU + 13, 4, 2, 'Feralas', 1, 1),
 (@ACTION_MENU + 13, 5, 2, 'Azshara', 1, 1),
@@ -527,7 +530,7 @@ INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_
 (@ENTRY, 0, 93, 0, 62, 0, 100, 0, @ACTION_MENU + 12, 8, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 1743.69, -1723.86, 59.6648, 5.23722, "Western Plaguelands"),
 
 (@ENTRY, 0, 94, 0, 62, 0, 100, 0, @ACTION_MENU + 13, 1, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 2280.64, -5275.05, 82.0166, 4.7479, "Light's Hope Chapel"),
-(@ENTRY, 0, 6, 0, 62, 0, 100, 0, @ACTION_MENU + 13, 2, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -13181.8, 339.356, 42.9805, 1.18013, "Gurubashi Arena"),
+(@ENTRY, 0, 6, 0, 62, 0, 100, 0, @GOSSIP_MENU, 11, 0, 0, 62, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, -13230.282, 224.19302, 32.50424, 1.114956, "Gurubashi Arena"),
 (@ENTRY, 0, 107, 0, 62, 0, 100, 0, @ACTION_MENU + 13, 3, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -3350.12, -3064.85, 33.0364, 5.12666, "Dustwallow Marsh"),
 (@ENTRY, 0, 108, 0, 62, 0, 100, 0, @ACTION_MENU + 13, 4, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, -4808.31, 1040.51, 103.769, 2.90655, "Feralas"),
 (@ENTRY, 0, 110, 0, 62, 0, 100, 0, @ACTION_MENU + 13, 5, 0, 0, 62, 1, 0, 0, 0, 0, 0, 7, 0, 0, 0, 3117.12, -4387.97, 91.9059, 5.49897, "Azshara"),

@@ -18,7 +18,7 @@ Changes from upstream:
 - IDs moved into the Tofu custom range: item 900000, creature 900000, gossip menus 900000 to 900002 and 900010 to 900026.
 - The item is Bind-on-Account, cannot be sold (SellPrice 0), and is not sold by any vendor; players get it from the starting kit.
 - Removed the SmartAI "despawn closest creature" row (it could despawn another player's teleporter) and the dance emote that never worked; fixed the "Wilderness 3" menu label.
-- Menus: Guild Hub, Cities, and Miscellaneous first on the main menu; Easter Egg Zones (menus 900003 to 900007); a Starter Zones page under Miscellaneous (menu 900008) that teleports to each race's new-character spawn point, labeled by subzone and race (Gnomes share Coldridge Valley and Trolls the Valley of Trials; the Death Knight start is left out); a Back option at the end of every page except the main menu; option icons: cogwheel opens a page, flight marker teleports, crossed swords teleports to a dungeon or raid, tabard is the Guild Hub, chat bubble with dots is Back.
+- Menus: Guild Hub, Cities, and Miscellaneous first on the main menu; Easter Egg Zones (menus 900003 to 900007); a Starter Zones page under Miscellaneous (menu 900008) that teleports to each race's new-character spawn point, labeled by subzone and race (Gnomes share Coldridge Valley and Trolls the Valley of Trials; the Death Knight start is left out); Gurubashi Arena as the last main-menu option, teleporting to the arena floor (free-for-all PvP; moved from Wilderness 3); a Back option at the end of every page except the main menu; option icons: cogwheel opens a page, flight marker teleports, crossed swords teleports to a dungeon or raid, tabard is the Guild Hub, chat bubble with dots is Back.
 
 ## Installation
 
